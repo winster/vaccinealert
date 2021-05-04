@@ -46,7 +46,7 @@ public class AlertScheduler {
   @Autowired
   private ObjectMapper objectMapper;
 
-  @Scheduled(cron = "0 0/1 21-23 * * ?")
+  @Scheduled(cron = "0 0/15 08-19 * * ?")
   public void searchForVaccine() {
     log.info("searchForVaccine :: {}", new SimpleDateFormat("dd-MM-yyyy").format(new Date()));
     Map<Integer, Boolean> districtMap = subscriptionService.getDistrictMap();
