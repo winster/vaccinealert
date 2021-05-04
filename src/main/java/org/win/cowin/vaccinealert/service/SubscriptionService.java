@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,6 +20,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -175,15 +178,18 @@ public class SubscriptionService {
     if (states != null) {
       for (State state : states.getStates()) {
         log.info("for state {}", state.getState_name());
-        Districts districts = restTemplate.getForObject(districtUrl + state.getState_id(), Districts.class);
-        if (districts != null) {
-          for (District district : districts.getDistricts()) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36");
+        HttpEntity<String> entity = new HttpEntity<String>("parameters", headers);
+        ResponseEntity<Districts> responseEntity = restTemplate.exchange(districtUrl + state.getState_id(), HttpMethod.GET, entity, Districts.class);
+        if (responseEntity != null && responseEntity.getBody() != null) {
+          for (District district : responseEntity.getBody().getDistricts()) {
             districtMap.put(district.getDistrict_id(), Boolean.FALSE);
           }
         }
       }
     }
-    districtMap.put(276, Boolean.FALSE);
     log.info("districtmap has {} elements", districtMap.keySet().size());
     this.setDistrictMap(districtMap);
   }
