@@ -174,17 +174,19 @@ public class SubscriptionService {
   public void initDistricts() {
     log.info("inside initDistricts");
     Map<Integer, Boolean> districtMap = new HashMap<>();
-    States states = restTemplate.getForObject(stateUrl, States.class);
-    if (states != null) {
-      for (State state : states.getStates()) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+    headers.add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36");
+    HttpEntity<String> entity = new HttpEntity<String>("parameters", headers);
+    ResponseEntity<States> stateResponseEntity = restTemplate.exchange(stateUrl, HttpMethod.GET, entity, States.class);
+
+    //States states = restTemplate.getForObject(stateUrl, States.class);
+    if (stateResponseEntity != null && stateResponseEntity.getBody() != null) {
+      for (State state : stateResponseEntity.getBody().getStates()) {
         log.info("for state {}", state.getState_name());
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        headers.add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36");
-        HttpEntity<String> entity = new HttpEntity<String>("parameters", headers);
-        ResponseEntity<Districts> responseEntity = restTemplate.exchange(districtUrl + state.getState_id(), HttpMethod.GET, entity, Districts.class);
-        if (responseEntity != null && responseEntity.getBody() != null) {
-          for (District district : responseEntity.getBody().getDistricts()) {
+        ResponseEntity<Districts> districtsResponseEntity = restTemplate.exchange(districtUrl + state.getState_id(), HttpMethod.GET, entity, Districts.class);
+        if (districtsResponseEntity != null && districtsResponseEntity.getBody() != null) {
+          for (District district : districtsResponseEntity.getBody().getDistricts()) {
             districtMap.put(district.getDistrict_id(), Boolean.FALSE);
           }
         }
