@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,6 +20,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -171,11 +174,16 @@ public class SubscriptionService {
   public void initDistricts() {
     log.info("inside initDistricts");
     Map<Integer, Boolean> districtMap = new HashMap<>();
-    ResponseEntity<States> stateResponseEntity = restTemplate.getForEntity(stateUrl, States.class);
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36");
+    HttpEntity entity = new HttpEntity(headers);
+    ResponseEntity<States> stateResponseEntity = restTemplate.exchange(stateUrl, HttpMethod.GET, entity, States.class);
+
+    //States states = restTemplate.getForObject(stateUrl, States.class);
     if (stateResponseEntity != null && stateResponseEntity.getBody() != null) {
       for (State state : stateResponseEntity.getBody().getStates()) {
         log.info("for state {}", state.getState_name());
-        ResponseEntity<Districts> districtsResponseEntity = restTemplate.getForEntity(districtUrl + state.getState_id(), Districts.class);
+        ResponseEntity<Districts> districtsResponseEntity = restTemplate.exchange(districtUrl + state.getState_id(), HttpMethod.GET, entity, Districts.class);
         if (districtsResponseEntity != null && districtsResponseEntity.getBody() != null) {
           for (District district : districtsResponseEntity.getBody().getDistricts()) {
             districtMap.put(district.getDistrict_id(), Boolean.FALSE);
