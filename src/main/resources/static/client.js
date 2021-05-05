@@ -5,8 +5,6 @@ const unsubscribeButton = document.getElementById('unsubscribeButton');
 const previousSubscriptionsDiv = document.getElementById('previousSubscriptionsDiv');
 const previousAlertsDiv = document.getElementById('previousAlertsDiv');
 
-const urlPrefix = "http://localhost:8080/api";
-
 if ("serviceWorker" in navigator) {
   try {
 	checkSubscription();
@@ -35,11 +33,6 @@ if ("serviceWorker" in navigator) {
     showDistricts(stateSelect.value)
   });
 
-  districtSelect.addEventListener("change", function() {
-    /*if(districtSelect.value) {
-        subscribeButton.disabled = false;
-    }*/
-  });
 }
 
 window.addEventListener("load", function() {
@@ -70,7 +63,7 @@ async function checkSubscription() {
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.getSubscription();
   if (subscription) {
-    const response = await fetch(urlPrefix+"/isSubscribed", {
+    const response = await fetch("/api/isSubscribed", {
       method: 'POST',
       body: JSON.stringify({endpoint: subscription.endpoint}),
       headers: {
@@ -89,7 +82,7 @@ async function checkSubscription() {
 }
 
 async function init() {
-  fetch(urlPrefix+'/publicSigningKey')
+  fetch('/api/publicSigningKey')
      .then(response => response.arrayBuffer())
      .then(key => this.publicSigningKey = key)
      .finally(() => console.info('Application Server Public Key fetched from the server'));
@@ -106,7 +99,7 @@ function displayPreviousSubscriptions() {
   caches.open('data').then(dataCache => {
     dataCache.match('districts')
       .then(response => response ? response.text() : '')
-      .then(txt => previousSubscriptionsDiv.innerText = 'You are subscribed to ' + txt);
+      .then(txt => txt ? previousSubscriptionsDiv.innerText = 'You are subscribed to ' + txt : previousSubscriptionsDiv.innerText = '');
   });
 }
 
@@ -114,10 +107,12 @@ async function displayPreviousAlerts() {
   console.log('displayLastMessages');
   const dataCache = await caches.open('data');
   const alerts = await dataCache.match('alerts');
-  const districts = await dataCache.match('districts');
-  const alertsValue = await alerts.text();
-  const districtsValue = await districts.text();
-  previousAlertsDiv.innerHTML = alertsValue + '<br/> Please visit <a href="https://www.cowin.gov.in/home">cowin portal</a> for booking. <br/> Please note that you are automatically unsubscribed from ' + districtsValue + '. But you can re-subscribe if required';
+  if (dataCache && alerts) {
+      const districts = await dataCache.match('districts');
+      const alertsValue = await alerts.text();
+      const districtsValue = await districts.text();
+      previousAlertsDiv.innerHTML = alertsValue + '<br/> Please visit <a href="https://www.cowin.gov.in/home">cowin portal</a> for booking. <br/> Please note that you are automatically unsubscribed from ' + districtsValue + '. But you can re-subscribe if required';
+  }
   previousSubscriptionsDiv.innerText = '';
 }
 
@@ -128,7 +123,7 @@ async function unsubscribe() {
     const successful = await subscription.unsubscribe();
     if (successful) {
       console.info('Unsubscription successful');
-      await fetch(urlPrefix+"/unsubscribe", {
+      await fetch("/api/unsubscribe", {
         method: 'POST',
         body: JSON.stringify({endpoint: subscription.endpoint}),
         headers: {
@@ -163,7 +158,7 @@ async function subscribe() {
   userSubscription.district = districtSelect.value;
   userSubscription.subscription = subscription;
 
-  await fetch(urlPrefix+"/subscribe", {
+  await fetch("/api/subscribe", {
     method: 'POST',
     body: JSON.stringify(userSubscription),
     headers: {
